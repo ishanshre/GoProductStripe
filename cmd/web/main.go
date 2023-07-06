@@ -8,6 +8,9 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/ishanshre/GoProductStripe/internal/driver"
+	"github.com/joho/godotenv"
 )
 
 const version = "1.0.0"
@@ -56,11 +59,19 @@ func main() {
 	flag.StringVar(&cfg.api, "api", "http://localhost:4001", "Url to api")
 	flag.Parse()
 
-	cfg.stripe.key = os.Getenv("STRIPE_KEY")
-	cfg.stripe.secret = os.Getenv("STRIPE_SECRET_KEY")
-
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime)
+
+	if err := godotenv.Load(".env"); err != nil {
+		errorLog.Fatalln("Cannot load the environment files")
+	}
+	cfg.stripe.key = os.Getenv("STRIPE_KEY")
+	cfg.stripe.secret = os.Getenv("STRIPE_SECRET_KEY")
+	conn, err := driver.OpenDB("postgres", os.Getenv("postgres"))
+	if err != nil {
+		errorLog.Fatalln(err)
+	}
+	defer conn.Close()
 
 	tc := make(map[string]*template.Template)
 
